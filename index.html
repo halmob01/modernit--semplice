@@ -1,0 +1,435 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>La catena della modernità</title>
+<style>
+:root{
+  --bg:#E9EDF3; --ink:#14181F; --a:#1F4FA3; --box:#1F4393; --boxk:#BFD4FA; --pale:#D8DFEA;
+  --line:#BCC6D8; --mute:#556072; --ok:#16794A; --okbg:#DDF3E7; --bad:#B3261E; --badbg:#FBE4E2; --card:#FFFFFF;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{font-family:"Public Sans",system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--ink);line-height:1.45;min-height:100vh}
+button{font:inherit;color:inherit;cursor:pointer}
+.app{max-width:1080px;margin:0 auto;padding:0 16px 40px}
+
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 0 10px}
+.top h1{font-family:Georgia,"Times New Roman",serif;font-style:italic;font-weight:400;font-size:1.5rem;color:var(--a);line-height:1.1}
+.hud{display:flex;gap:14px;align-items:center;font-size:.9rem;color:var(--mute);font-weight:600;white-space:nowrap}
+.hud b{color:var(--ink);font-size:1.1rem}
+[hidden]{display:none!important}
+
+.layout{display:grid;grid-template-columns:minmax(0,1fr);gap:16px}
+@media (min-width:900px){
+  .layout{grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:start;gap:28px}
+  .panel{position:sticky;top:16px}
+}
+.stage{display:flex;flex-direction:column;gap:14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px}
+#map{display:block;width:100%;height:auto;max-width:520px;margin:0 auto}
+@media (max-width:899px){#map{max-width:300px}.card{padding:10px}.brick{min-height:52px;font-size:.78rem}}
+.node{cursor:default;outline:none}
+.node.focus rect{stroke-width:4;filter:drop-shadow(0 0 5px rgba(31,79,163,.55))}
+.node.sel rect{stroke-width:4.5}
+.node.dim,.edge.dim{opacity:.22}
+.explore .node{cursor:pointer}
+.edge path{stroke-dasharray:1;stroke-dashoffset:1;animation:draw .7s ease forwards}
+.edge polygon{opacity:0;animation:pop .3s ease forwards}
+.edge.static path{animation:none;stroke-dashoffset:0}
+.edge.static polygon{animation:none;opacity:1}
+.edge.on path{stroke-width:4.6}
+@keyframes draw{to{stroke-dashoffset:0}}
+@keyframes pop{to{opacity:1}}
+
+.wallhead{font-size:.78rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--a);margin-bottom:10px}
+.wall{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.brick{min-height:62px;border-radius:10px;padding:8px 10px;display:flex;align-items:center;gap:8px;font-size:.84rem;line-height:1.25;background:#C9CED8;color:#6B7487;border:2px dashed #AEB5C3}
+.brick .bi{font-size:1.3rem;flex:none}
+.brick.focus{border-color:var(--a);color:var(--ink);background:#DCE6F8}
+.brick.broken{background:#fff;color:var(--ink);border:2px solid var(--c,#1F4FA3);animation:shake .45s ease}
+.brick.dim{opacity:.35}
+@keyframes shake{0%{transform:translateX(0)}20%{transform:translateX(-4px) rotate(-1deg)}40%{transform:translateX(4px) rotate(1deg)}60%{transform:translateX(-3px)}100%{transform:none}}
+
+.panel{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px 18px;display:flex;flex-direction:column;gap:14px}
+.panel h2{font-size:1.45rem;line-height:1.2}
+.panel p{font-size:1.05rem}
+.eyebrow{font-size:.78rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--a)}
+.how{padding-left:1.3rem;display:flex;flex-direction:column;gap:6px;font-size:1.05rem}
+.how li::marker{color:var(--a);font-weight:700}
+label.nm{display:flex;flex-direction:column;gap:6px;font-weight:600;font-size:.95rem}
+input[type=text]{font:inherit;padding:12px 14px;border:2px solid var(--line);border-radius:12px;background:#fff;width:100%}
+input[type=text]:focus{outline:none;border-color:var(--a)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:50px;padding:12px 20px;border-radius:12px;border:2px solid var(--a);background:#fff;color:var(--a);font-weight:700;font-size:1.05rem}
+.btn.primary{background:var(--a);color:#fff}
+.btn:active{transform:scale(.98)}
+.row{display:flex;gap:10px;flex-wrap:wrap}
+
+.who{display:flex;align-items:center;gap:12px;background:var(--pale);border-radius:12px;padding:12px 14px}
+.who .ic{font-size:2rem;line-height:1}
+.who b{font-size:1.2rem;line-height:1.2}
+.who small{display:block;color:var(--mute);font-size:.85rem}
+.clue{background:var(--box);color:#fff;border-radius:12px;padding:14px 16px;font-family:Georgia,"Times New Roman",serif;font-style:italic;font-size:1.25rem;line-height:1.3}
+.clue small{display:block;font-family:inherit;font-style:normal;font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--boxk);margin-bottom:4px;font-weight:700}
+.opts{display:flex;flex-direction:column;gap:10px}
+.opt{display:flex;align-items:center;gap:12px;text-align:left;min-height:56px;padding:12px 14px;border-radius:12px;border:2px solid var(--line);background:#fff;font-size:1.05rem;font-weight:600}
+.opt .oi{font-size:1.5rem;flex:none}
+.opt:hover:not([disabled]){border-color:var(--a)}
+.opt[disabled]{cursor:default}
+.opt.right{border-color:var(--ok);background:var(--okbg)}
+.opt.wrong{border-color:var(--bad);background:var(--badbg);opacity:.85}
+.fb{border-radius:12px;padding:12px 14px;font-size:1.02rem}
+.fb.ok{background:var(--okbg);color:#0E4B2D}
+.fb.no{background:var(--badbg);color:#6F1812}
+.fb b{display:block;margin-bottom:4px}
+.result{font-size:2.4rem;line-height:1;color:var(--a)}
+.result span{font-size:1.1rem;color:var(--mute);margin-left:6px}
+.key{background:var(--box);color:#fff;border-radius:12px;padding:14px 16px;font-size:1.05rem}
+.xp{background:var(--pale);border-radius:12px;padding:14px 16px;display:flex;flex-direction:column;gap:8px;font-size:1rem}
+.xp h3{font-size:1.1rem;display:flex;gap:8px;align-items:center}
+.xp .ln{padding-left:2px}
+.xp .tag{font-size:.74rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--a);display:block}
+.copybox{width:100%;font:inherit;font-size:.95rem;padding:10px;border:2px solid var(--line);border-radius:10px}
+.sr{position:absolute;left:-9999px}
+@media (prefers-reduced-motion:reduce){
+  .edge path{animation:none;stroke-dashoffset:0}.edge polygon{animation:none;opacity:1}.brick.broken{animation:none}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <h1>La catena della modernità</h1>
+    <div class="hud" id="hud" hidden><span id="lvl"></span><span>Punti <b id="pts">0</b></span></div>
+  </header>
+  <main class="layout">
+    <div class="stage">
+      <div class="card" id="mapBox"><svg id="map" viewBox="0 0 360 338" role="img" aria-label="Mappa dei collegamenti tra i fenomeni"></svg></div>
+      <div class="card" id="wallBox" hidden><div class="wallhead">L’ordine medievale</div><div class="wall" id="wall"></div></div>
+    </div>
+    <section class="panel" id="panel" aria-live="polite"></section>
+  </main>
+</div>
+
+<script>
+(function(){
+'use strict';
+
+/* ---------- DATI ---------- */
+var N = {
+  stampa:  {name:'Stampa', icon:'🖨️', col:'#D63A6E', desc:'Circolazione rapida del sapere', pos:[0,0], lines:['Stampa']},
+  scoperte:{name:'Scoperte geografiche', icon:'🌍', col:'#2E9E4F', desc:'Nuovi mondi, crisi dei testi antichi', pos:[1,0], lines:['Scoperte','geografiche']},
+  rinasc:  {name:'Rinascimento', icon:'🎨', col:'#7C4DCC', desc:'Centralità e dignità dell’uomo', pos:[2,0], lines:['Rinascimento']},
+  riforma: {name:'Riforma protestante', icon:'⛪', col:'#2F7DE1', desc:'Crisi dell’unità religiosa', pos:[0,1], lines:['Riforma','protestante']},
+  capit:   {name:'Nascita del capitalismo', icon:'🪙', col:'#12958F', desc:'Commercio, banche, investimento', pos:[1,1], lines:['Capitalismo']},
+  scienza: {name:'Rivoluzione scientifica', icon:'🔭', col:'#E5811F', desc:'Nuova immagine del cosmo', pos:[2,1], lines:['Rivoluzione','scientifica']},
+  stato:   {name:'Nascita dello Stato', icon:'🏰', col:'#B5468C', desc:'Eserciti, tasse, burocrazia', pos:[1,2], lines:['Nascita','dello Stato']},
+  secol:   {name:'Secolarizzazione', icon:'🏛️', col:'#6E9E2D', desc:'Sfere della vita più autonome', pos:[1,3], lines:['Secolarizzazione']}
+};
+
+/* Livello 1: collegamenti tra fenomeni (etichette dallo schema) */
+var E1 = [
+  {id:'e1', f:'stampa',  t:'riforma', geom:'v', label:'Diffonde Bibbie, traduzioni e pamphlet', opts:['stato','capit'],
+   why:'Con la stampa Bibbie, traduzioni e pamphlet arrivano a molte persone. Senza la stampa la Riforma non si sarebbe diffusa così in fretta.'},
+  {id:'e2', f:'riforma', t:'secol',   geom:'L', label:'Indebolisce il monopolio religioso', opts:['scoperte','rinasc'],
+   why:'Dopo la Riforma la Chiesa non ha più il monopolio della religione. Politica, economia e scienza cominciano a fare a meno della giustificazione religiosa.'},
+  {id:'e3', f:'rinasc',  t:'scienza', geom:'v', label:'Valorizza ragione, osservazione e filologia', opts:['stato','scoperte'],
+   why:'Il Rinascimento mette al centro la ragione e l’osservazione. Prepara il lavoro di Copernico e di Galileo.'},
+  {id:'e4', f:'scienza', t:'secol',   geom:'R', label:'La natura si spiega con leggi proprie', opts:['stampa','stato'],
+   why:'Dopo Copernico la natura si spiega con leggi proprie, senza bisogno di spiegazioni religiose.'},
+  {id:'e5', f:'scoperte',t:'capit',   geom:'v', label:'Aprono rotte commerciali e mercati', opts:['riforma','stato'],
+   why:'I nuovi viaggi aprono rotte e mercati. Il commercio a lunga distanza fa crescere banche e investimenti.'},
+  {id:'e6', f:'capit',   t:'stato',   geom:'v', label:'Aumenta ricchezze, tasse e amministrazione', opts:['riforma','rinasc'],
+   why:'Più ricchezza vuol dire più tasse. Lo Stato può pagare eserciti permanenti e una burocrazia.'},
+  {id:'e7', f:'stato',   t:'secol',   geom:'v', label:'La politica acquista logiche autonome', opts:['stampa','scoperte'],
+   why:'La politica si dà regole proprie e non ha più bisogno della giustificazione religiosa.'}
+];
+
+/* Livello 2: come ogni fenomeno rompe l'ordine medievale */
+var E2 = [
+  {k:'scoperte', label:'Mostrano i limiti delle autorità tradizionali', wrong:['stato','secol'],
+   why:'La Terra è più grande di quanto dicessero i testi sacri e gli antichi. La Bibbia e Tolomeo potevano sbagliare.'},
+  {k:'rinasc',   label:'Mette al centro la dignità dell’uomo', wrong:['stato','capit'],
+   why:'L’uomo non ha un posto fisso nella catena dell’essere: può plasmare se stesso. È artefice, non solo creatura.'},
+  {k:'stato',    label:'Sostituisce i legami feudali con apparati stabili', wrong:['riforma','rinasc'],
+   why:'Eserciti permanenti, tasse e burocrazia prendono il posto dei legami personali tra signore e vassallo.'},
+  {k:'riforma',  label:'Frattura l’unità dell’Occidente cristiano', wrong:['capit','scienza'],
+   why:'Dal 1517 ogni fedele può leggere la Scrittura da sé. L’autorità diventa anche una questione di coscienza.'},
+  {k:'stampa',   label:'Fa circolare nuove idee e scoperte', wrong:['capit','stato'],
+   why:'Il sapere non è più custodito da pochi copisti: circola, si moltiplica e sfugge al controllo centrale.'},
+  {k:'scienza',  label:'Smonta il cosmo gerarchico medievale', wrong:['riforma','capit'],
+   why:'Con Copernico la Terra non è più al centro. Il cosmo diventa uno spazio con leggi matematiche universali.'},
+  {k:'capit',    label:'La ricchezza non dipende più solo da terra e censo', wrong:['scienza','riforma'],
+   why:'La ricchezza nasce da rischio, investimento e scambio, non solo dalla terra ereditata.'},
+  {k:'secol',    label:'I diversi ambiti della vita si separano dalla religione', wrong:['stampa','capit'],
+   why:'Politica, economia, scienza e arte sviluppano una logica propria. Weber lo chiamerà disincantamento del mondo.'}
+];
+var E2by = {}; E2.forEach(function(e){E2by[e.k]=e;});
+var MAX = (E1.length + E2.length) * 10;
+
+/* ---------- UTILITA ---------- */
+function $(s){return document.querySelector(s);}
+function esc(s){return String(s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+function shuffle(a){a=a.slice();for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t;}return a;}
+function rgba(hex,a){var n=parseInt(hex.slice(1),16);return 'rgba('+(n>>16)+','+((n>>8)&255)+','+(n&255)+','+a+')';}
+var SVGNS='http://www.w3.org/2000/svg';
+function mk(tag,attrs,parent){var e=document.createElementNS(SVGNS,tag);for(var a in attrs)e.setAttribute(a,attrs[a]);if(parent)parent.appendChild(e);return e;}
+
+/* ---------- MAPPA ---------- */
+var W=108,H=50,HW=W/2,HH=H/2,XS=[60,180,300],YS=[34,124,214,304];
+function xy(k){var p=N[k].pos;return {x:XS[p[0]],y:YS[p[1]]};}
+
+function buildMap(){
+  var svg=$('#map'); svg.innerHTML='';
+  mk('g',{id:'edges'},svg);
+  var ng=mk('g',{id:'nodes'},svg);
+  Object.keys(N).forEach(function(k){
+    var n=N[k],p=xy(k);
+    var g=mk('g',{'class':'node','data-k':k,role:'button','aria-label':n.name,tabindex:'-1',transform:'translate('+p.x+','+p.y+')'},ng);
+    mk('rect',{x:-HW,y:-HH,width:W,height:H,rx:10,fill:rgba(n.col,.14),stroke:n.col,'stroke-width':2},g);
+    var two=n.lines.length>1;
+    var ic=mk('text',{x:0,y:two?-9:-6,'text-anchor':'middle','font-size':15},g); ic.textContent=n.icon;
+    n.lines.forEach(function(ln,i){
+      var t=mk('text',{x:0,y:(two?4:11)+i*11.5,'text-anchor':'middle','font-size':11,'font-weight':600,fill:'#14181F'},g);
+      t.textContent=ln;
+    });
+  });
+}
+function arrowPts(tip,u){
+  var n={x:-u.y,y:u.x};
+  var a={x:tip.x-u.x*9+n.x*4.5,y:tip.y-u.y*9+n.y*4.5}, b={x:tip.x-u.x*9-n.x*4.5,y:tip.y-u.y*9-n.y*4.5};
+  return tip.x+','+tip.y+' '+a.x+','+a.y+' '+b.x+','+b.y;
+}
+function drawEdge(e,delay,isStatic){
+  var f=xy(e.f),t=xy(e.t),col=N[e.f].col,d,tip,u,s={x:f.x,y:f.y+HH};
+  if(e.geom==='v'){ tip={x:t.x,y:t.y-HH-1}; u={x:0,y:1}; d='M'+s.x+','+s.y+' L'+tip.x+','+(tip.y-8); }
+  else if(e.geom==='L'){ tip={x:t.x-HW-1,y:t.y}; u={x:1,y:0}; d='M'+s.x+','+s.y+' Q'+f.x+','+t.y+' '+(tip.x-8)+','+tip.y; }
+  else { tip={x:t.x+HW+1,y:t.y}; u={x:-1,y:0}; d='M'+s.x+','+s.y+' Q'+f.x+','+t.y+' '+(tip.x+8)+','+tip.y; }
+  var g=mk('g',{'class':'edge'+(isStatic?' static':''),'data-id':e.id,'data-f':e.f,'data-t':e.t},$('#edges'));
+  var p=mk('path',{d:d,fill:'none',stroke:col,'stroke-width':3.2,'stroke-linecap':'round',pathLength:1},g);
+  var h=mk('polygon',{points:arrowPts(tip,u),fill:col},g);
+  if(!isStatic){p.style.animationDelay=delay+'ms';h.style.animationDelay=(delay+450)+'ms';}
+}
+function setFocusNode(k){
+  var nodes=document.querySelectorAll('#nodes .node');
+  for(var i=0;i<nodes.length;i++){nodes[i].classList.toggle('focus',nodes[i].getAttribute('data-k')===k);}
+}
+
+/* ---------- MURO ---------- */
+var WALL_ORDER=['scoperte','rinasc','stato','riforma','stampa','scienza','capit','secol'];
+function buildWall(){
+  var w=$('#wall'); w.innerHTML='';
+  WALL_ORDER.forEach(function(k){
+    var b=document.createElement('div'); b.className='brick'; b.setAttribute('data-k',k);
+    b.innerHTML='<span class="bi">🧱</span><span>Ordine medievale</span>';
+    w.appendChild(b);
+  });
+}
+function focusBrick(k){
+  var bs=document.querySelectorAll('#wall .brick');
+  for(var i=0;i<bs.length;i++){bs[i].classList.toggle('focus',bs[i].getAttribute('data-k')===k && !bs[i].classList.contains('broken'));}
+}
+function breakBrick(k){
+  var b=document.querySelector('#wall .brick[data-k="'+k+'"]'); if(!b)return;
+  b.classList.remove('focus'); b.classList.add('broken'); b.style.setProperty('--c',N[k].col);
+  b.innerHTML='<span class="bi">'+N[k].icon+'</span><span>'+esc(E2by[k].label)+'</span>';
+}
+
+/* ---------- STATO ---------- */
+var S;
+function reset(){ S={screen:'intro',name:'',score:0,i:0,tries:0,found:[],broken:[],order:[]}; }
+function setHud(txt){
+  var h=$('#hud'); h.hidden=!txt; $('#lvl').textContent=txt||''; $('#pts').textContent=S.score;
+}
+function showStage(map,wall){ $('#mapBox').hidden=!map; $('#wallBox').hidden=!wall; }
+function panel(html){ $('#panel').innerHTML=html; }
+
+/* ---------- SCHERMATE ---------- */
+function screenIntro(){
+  S.screen='intro'; setHud(''); buildMap(); buildWall(); showStage(true,false);
+  document.getElementById('map').classList.remove('explore');
+  panel(
+    '<div class="eyebrow">Storia · Modernità</div>'+
+    '<h2>Come cambia il mondo medievale?</h2>'+
+    '<p>Nel Quattrocento e nel Cinquecento otto fenomeni cambiano l’Europa. Non sono separati: <b>si influenzano a vicenda</b>.</p>'+
+    '<ol class="how"><li><b>Livello 1.</b> Trova i collegamenti tra i fenomeni.</li><li><b>Livello 2.</b> Scopri come ogni fenomeno rompe l’ordine medievale.</li><li><b>Alla fine</b> hai la mappa completa.</li></ol>'+
+    '<label class="nm">Il tuo nome<input type="text" id="name" maxlength="30" autocomplete="off" placeholder="Scrivi il tuo nome"></label>'+
+    '<button class="btn primary" data-act="start">Inizia</button>'
+  );
+}
+function screenLevelIntro(l){
+  S.screen='l'+l+'intro'; S.i=0;
+  if(l===1){
+    showStage(true,false); setHud('Livello 1');
+    panel('<div class="eyebrow">Livello 1</div><h2>Una cosa porta all’altra</h2>'+
+      '<p>Vedi un fenomeno e un indizio. Scegli il fenomeno a cui porta. Ogni risposta giusta <b>disegna una freccia</b> sulla mappa.</p>'+
+      '<p>Prima risposta giusta: 10 punti. Seconda: 5 punti.</p>'+
+      '<button class="btn primary" data-act="go1">Continua</button>');
+  } else {
+    showStage(false,true); setHud('Livello 2'); focusBrick(null);
+    panel('<div class="eyebrow">Livello 2</div><h2>Come si rompe il vecchio ordine?</h2>'+
+      '<p>Il mondo medievale era come un muro solido. Ogni fenomeno ne <b>rompe un pezzo</b>. Scegli come.</p>'+
+      '<button class="btn primary" data-act="go2">Continua</button>');
+  }
+}
+function optBtn(i,icon,text){
+  return '<button class="opt" data-act="pick" data-v="'+esc(i)+'"><span class="oi">'+icon+'</span><span>'+esc(text)+'</span></button>';
+}
+function screenQ1(){
+  S.screen='q1'; S.tries=0;
+  var e=E1[S.i], n=N[e.f];
+  setFocusNode(e.f);
+  var keys=shuffle([e.t].concat(e.opts));
+  var btns=keys.map(function(k){return optBtn(k,N[k].icon,N[k].name);}).join('');
+  panel(
+    '<div class="eyebrow">Livello 1 · Domanda '+(S.i+1)+' di '+E1.length+'</div>'+
+    '<div class="who"><span class="ic">'+n.icon+'</span><div><b>'+esc(n.name)+'</b><small>'+esc(n.desc)+'</small></div></div>'+
+    '<div class="clue"><small>Indizio</small>«'+esc(e.label)+'»</div>'+
+    '<p><b>A quale fenomeno porta?</b></p>'+
+    '<div class="opts" id="opts">'+btns+'</div>'+
+    '<div id="fb"></div>'
+  );
+}
+function screenQ2(){
+  S.screen='q2'; S.tries=0;
+  var e=E2[S.i], n=N[e.k];
+  focusBrick(e.k);
+  var labels=shuffle([e.k].concat(e.wrong));
+  var btns=labels.map(function(k){return optBtn(k,'🧱',E2by[k].label);}).join('');
+  panel(
+    '<div class="eyebrow">Livello 2 · Domanda '+(S.i+1)+' di '+E2.length+'</div>'+
+    '<div class="who"><span class="ic">'+n.icon+'</span><div><b>'+esc(n.name)+'</b><small>'+esc(n.desc)+'</small></div></div>'+
+    '<p><b>Come rompe l’ordine medievale?</b></p>'+
+    '<div class="opts" id="opts">'+btns+'</div>'+
+    '<div id="fb"></div>'
+  );
+}
+
+function answer(v,btn){
+  var lvl=S.screen==='q1'?1:2;
+  var e=lvl===1?E1[S.i]:E2[S.i];
+  var right=lvl===1?e.t:e.k;
+  var why=e.why;
+  var fb=$('#fb'), opts=document.querySelectorAll('#opts .opt');
+  function lock(){for(var i=0;i<opts.length;i++)opts[i].disabled=true;}
+  if(v===right){
+    var pts=S.tries===0?10:5; S.score+=pts; $('#pts').textContent=S.score; lock(); btn.classList.add('right');
+    fb.innerHTML='<div class="fb ok"><b>✅ Giusto! +'+pts+' punti</b>'+esc(why)+'</div><div class="row" style="margin-top:12px"><button class="btn primary" data-act="next">Avanti</button></div>';
+    reveal(lvl,e);
+  } else {
+    S.tries++; btn.disabled=true; btn.classList.add('wrong');
+    if(S.tries===1){
+      fb.innerHTML='<div class="fb no"><b>❌ Non è questo.</b>Riprova: se è giusta prendi 5 punti.</div>';
+    } else {
+      lock();
+      for(var i=0;i<opts.length;i++){ if(opts[i].getAttribute('data-v')===right) opts[i].classList.add('right'); }
+      fb.innerHTML='<div class="fb no"><b>La risposta giusta è quella verde. 0 punti.</b>'+esc(why)+'</div><div class="row" style="margin-top:12px"><button class="btn primary" data-act="next">Avanti</button></div>';
+      reveal(lvl,e);
+    }
+  }
+}
+function reveal(lvl,e){
+  if(lvl===1){ drawEdge(e,0,false); S.found.push(e.id); setFocusNode(null); }
+  else { breakBrick(e.k); S.broken.push(e.k); }
+}
+function next(){
+  S.i++;
+  if(S.screen==='q1'){ if(S.i<E1.length) screenQ1(); else screenLevelIntro(2); }
+  else if(S.screen==='q2'){ if(S.i<E2.length) screenQ2(); else screenFinal(); }
+}
+
+/* ---------- FINALE ---------- */
+function stars(){ return S.score>=130?'★★★':(S.score>=90?'★★☆':'★☆☆'); }
+function resultText(){ return (S.name?S.name+' — ':'')+'La catena della modernità — '+S.score+'/'+MAX+' '+stars(); }
+function screenFinal(){
+  S.screen='final'; setHud(''); setFocusNode(null); focusBrick(null);
+  showStage(true,true);
+  // mappa completa: ridisegna tutte le frecce con animazione a catena
+  buildMap(); E1.forEach(function(e,i){drawEdge(e,i*350,false);});
+  var svg=$('#map'); svg.classList.add('explore');
+  WALL_ORDER.forEach(function(k){ var b=document.querySelector('#wall .brick[data-k="'+k+'"]'); if(b&&!b.classList.contains('broken')) breakBrick(k); });
+  var msg = S.score>=130 ? 'Ottimo! Hai capito come i fenomeni si collegano.' :
+            S.score>=90  ? 'Bene! Puoi rigiocare per migliorare il punteggio.' :
+                           'La mappa è completa. Rigioca per migliorare il punteggio.';
+  panel(
+    '<div class="eyebrow">Fine</div>'+
+    '<h2>La tua mappa è completa</h2>'+
+    '<div class="result">'+stars()+'<span>'+S.score+' / '+MAX+' punti</span></div>'+
+    '<p>'+esc(msg)+'</p>'+
+    '<div class="key">Nessun fenomeno basta da solo: i processi si intrecciano, si rafforzano a vicenda e insieme producono la modernità.</div>'+
+    '<div class="xp" id="xp"><h3>👆 Tocca un fenomeno sulla mappa</h3><span>Vedi da dove arriva, dove porta e come rompe l’ordine medievale.</span></div>'+
+    '<div class="row"><button class="btn primary" data-act="copy">Copia il risultato</button><button class="btn" data-act="again">Gioca ancora</button></div>'+
+    '<div id="copyfb"></div>'
+  );
+  var nodes=document.querySelectorAll('#nodes .node');
+  for(var i=0;i<nodes.length;i++){nodes[i].setAttribute('tabindex','0');}
+}
+function chainFrom(k){
+  var seen={},order=[],q=[k];seen[k]=true;
+  while(q.length){var c=q.shift();E1.forEach(function(e){if(e.f===c&&!seen[e.t]){seen[e.t]=true;order.push(e.t);q.push(e.t);}});}
+  return order;
+}
+function selectNode(k){
+  var nodes=document.querySelectorAll('#nodes .node'), edges=document.querySelectorAll('#edges .edge'), i;
+  for(i=0;i<nodes.length;i++){nodes[i].classList.toggle('sel',nodes[i].getAttribute('data-k')===k);}
+  var linked={};linked[k]=true;
+  var inc=E1.filter(function(e){return e.t===k;}), out=E1.filter(function(e){return e.f===k;});
+  inc.forEach(function(e){linked[e.f]=true;}); out.forEach(function(e){linked[e.t]=true;});
+  for(i=0;i<nodes.length;i++){nodes[i].classList.toggle('dim',!linked[nodes[i].getAttribute('data-k')]);}
+  for(i=0;i<edges.length;i++){
+    var f=edges[i].getAttribute('data-f'),t=edges[i].getAttribute('data-t'),on=(f===k||t===k);
+    edges[i].classList.toggle('on',on); edges[i].classList.toggle('dim',!on);
+  }
+  var bs=document.querySelectorAll('#wall .brick');
+  for(i=0;i<bs.length;i++){bs[i].classList.toggle('dim',bs[i].getAttribute('data-k')!==k);}
+  var n=N[k], h='<h3><span>'+n.icon+'</span> '+esc(n.name)+'</h3><span>'+esc(n.desc)+'</span>';
+  h+='<div class="ln"><span class="tag">Arriva da</span>'+(inc.length?inc.map(function(e){return N[e.f].icon+' <b>'+esc(N[e.f].name)+'</b> — '+esc(e.label);}).join('<br>'):'Nessun fenomeno: è un punto di partenza.')+'</div>';
+  h+='<div class="ln"><span class="tag">Porta a</span>'+(out.length?out.map(function(e){return N[e.t].icon+' <b>'+esc(N[e.t].name)+'</b> — '+esc(e.label);}).join('<br>'):'Nessun altro fenomeno: è un punto di arrivo.')+'</div>';
+  var ch=chainFrom(k);
+  if(ch.length>1){ h+='<div class="ln"><span class="tag">Effetto a catena</span>'+N[k].icon+' '+ch.map(function(c){return '→ '+N[c].icon+' '+esc(N[c].name);}).join(' ')+'</div>'; }
+  h+='<div class="ln"><span class="tag">Rompe l’ordine medievale</span>'+esc(E2by[k].label)+'</div>';
+  $('#xp').innerHTML=h;
+}
+
+/* ---------- COPIA ---------- */
+function copyText(t,done){
+  function fallback(){
+    var ta=document.createElement('textarea'); ta.value=t; ta.setAttribute('readonly',''); ta.style.position='fixed'; ta.style.opacity='0';
+    document.body.appendChild(ta); ta.select(); var ok=false; try{ok=document.execCommand('copy');}catch(e){} document.body.removeChild(ta); done(ok);
+  }
+  if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(t).then(function(){done(true);},fallback); } else fallback();
+}
+
+/* ---------- EVENTI ---------- */
+document.addEventListener('click',function(ev){
+  var m=ev.target.closest('#map .node');
+  if(m && S.screen==='final'){ selectNode(m.getAttribute('data-k')); return; }
+  var b=ev.target.closest('[data-act]'); if(!b)return;
+  var act=b.getAttribute('data-act');
+  if(act==='start'){ var inp=$('#name'); S.name=inp?inp.value.trim():''; screenLevelIntro(1); }
+  else if(act==='go1'){ screenQ1(); }
+  else if(act==='go2'){ screenQ2(); }
+  else if(act==='pick'){ answer(b.getAttribute('data-v'),b); }
+  else if(act==='next'){ next(); }
+  else if(act==='again'){ reset(); screenIntro(); }
+  else if(act==='copy'){
+    var t=resultText();
+    copyText(t,function(ok){
+      $('#copyfb').innerHTML= ok ? '<div class="fb ok">✅ Copiato! Incollalo in un messaggio.</div>'
+        : '<div class="fb no">Non riesco a copiare. Copia a mano questo testo:</div><input class="copybox" type="text" readonly value="'+esc(t)+'">';
+    });
+  }
+});
+document.addEventListener('keydown',function(ev){
+  if((ev.key==='Enter'||ev.key===' ')&&S.screen==='final'){
+    var m=ev.target.closest&&ev.target.closest('#map .node'); if(m){ev.preventDefault();selectNode(m.getAttribute('data-k'));}
+  }
+  if(ev.key==='Enter'&&ev.target.id==='name'){ var st=document.querySelector('[data-act="start"]'); if(st)st.click(); }
+});
+
+reset(); screenIntro();
+})();
+</script>
+</body>
+</html>
